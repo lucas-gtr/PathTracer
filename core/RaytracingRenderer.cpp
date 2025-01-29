@@ -14,7 +14,7 @@ void RaytracingRenderer::SetSamplesPerPixels(unsigned int samples) {
   m_samples_per_pixel = samples;
   m_sqrt_samples_per_pixels = std::sqrt(m_samples_per_pixel);
   m_grid_cell_size = 1 / m_sqrt_samples_per_pixels;
-  m_pixel_sample_factor = 1 / (m_samples_per_pixel * m_sqrt_samples_per_pixels);
+  m_pixel_sample_factor = 1 / (m_sqrt_samples_per_pixels * m_sqrt_samples_per_pixels);
 }
 
 void RaytracingRenderer::SetMaxDepth(unsigned int max_depth){
