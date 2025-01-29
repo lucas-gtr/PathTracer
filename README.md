@@ -3,6 +3,7 @@
 This project is a physically-based path tracer written in C++. It is highly configurable, supporting a wide range of parameters, materials, and lighting techniques.
 
 ![Cornell box example](cornell_box.png)
+
 *Cornell box rendered with 200 samples per pixels*
 
 Below is an overview of its features and functionality.
