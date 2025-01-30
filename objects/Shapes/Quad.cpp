@@ -7,3 +7,5 @@ const bool Quad::IsInShape(const float a, const float b) const {
   float y = b + 0.5f;
   return (0.0f <= x && x <= 1.0f && 0.0f <= y && y <= 1.0f);
 }
+
+

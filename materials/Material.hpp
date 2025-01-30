@@ -1,7 +1,5 @@
 #pragma once
 
-#include "geometry.h"
-
 #include "TextureManager.h"
 
 class Material {

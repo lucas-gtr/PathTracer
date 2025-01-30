@@ -30,6 +30,13 @@ void Scene::AddPointLight(const vec3& position, const float radius, const vec3& 
   AddObject(std::make_shared<PointLight>(position, radius, color, intensity));
 }
 
+void Scene::AddObject(std::shared_ptr<Box> box) {
+  for (auto& quad : box->quad_list) {
+    m_renderable_object_list.push_back(quad);
+    m_object_list.push_back(quad);
+  }
+}
+
 void Scene::AddObject(std::shared_ptr<RenderObject> renderable_object) {
   m_renderable_object_list.push_back(renderable_object);
   m_object_list.push_back(renderable_object);

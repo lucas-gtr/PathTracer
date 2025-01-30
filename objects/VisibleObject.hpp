@@ -1,7 +1,7 @@
 #pragma once
 
-#include "MaterialManager.h"
 #include "RenderObject.hpp"
+#include "MaterialManager.h"
 
 class VisibleObject : public RenderObject {
 protected:

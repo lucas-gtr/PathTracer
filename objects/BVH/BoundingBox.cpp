@@ -28,7 +28,6 @@ const int BBox::longest_axis() const {
 }
 
 const bool BBox::hit(Ray& ray) const {
-
   float min_dist = ray.min_distance();
   float max_dist = ray.max_distance();
   
@@ -48,8 +47,9 @@ const bool BBox::hit(Ray& ray) const {
       if (t0 < max_dist) max_dist = t0;
     }
     
-    if (max_dist <= min_dist)
+    if (max_dist <= min_dist) {      
       return false;
+    }
   }
   return true;
 }

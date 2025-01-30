@@ -1,7 +1,7 @@
 #include "ToneMappingStrategy.hpp"
 
 void ToneMappingNone::GetColorLDR(vec3& hdr_color) const {
-  hdr_color.clamp(0.0f, 1.0f);
+  hdr_color = hdr_color.clamped(0.0f, 1.0f);
 }
 
 void ToneMappingReinhard::GetColorLDR(vec3& hdr_color) const {

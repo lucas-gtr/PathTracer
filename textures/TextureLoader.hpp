@@ -4,7 +4,7 @@
 #include <iostream>
 
 struct TextureData {
-  unsigned char* image;
+  unsigned char* image = nullptr;
   int width;
   int height;
   int n_channels;

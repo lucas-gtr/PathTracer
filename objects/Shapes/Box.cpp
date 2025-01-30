@@ -1,5 +1,7 @@
 #include "Box.hpp"
 
+#include <sys/time.h>
+
 Box::Box(const vec3& center, const vec3& scale, const std::string& material_name) : VisibleObject(vec3(0.0f), vec3(0.0f), scale, material_name) {
   vec3 half_extents = scale * 0.5f;
   // Front face
@@ -59,3 +61,4 @@ const bool Box::hit(Ray& ray) const {
   
   return hit_one_quad;
 }
+

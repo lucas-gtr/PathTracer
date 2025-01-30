@@ -1,14 +1,12 @@
 #pragma once
 
-#include "VisibleObject.hpp"
-
 #include "Quad.hpp"
 
 class Box : public VisibleObject {
 private:
-  std::shared_ptr<Quad> quad_list[6];
   
 public:
+  std::shared_ptr<Quad> quad_list[6];
   Box(const vec3& center, const vec3& scale, const std::string& material_name="default");
   
   void SetRotation(const vec3 &rotation);

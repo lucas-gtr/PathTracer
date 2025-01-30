@@ -1,7 +1,6 @@
 #pragma once
 
 #include "HittableObject.hpp"
-#include "Material.hpp"
 
 class RenderObject : public HittableObject {
 protected:

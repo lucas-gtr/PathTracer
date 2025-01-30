@@ -6,7 +6,7 @@ VisibleObject::VisibleObject(const vec3& position, const vec3& rotation, const v
 
 void VisibleObject::UpdateHitRecord(Ray& ray) const {
   ray.SetMaterial(m_material);
-  
+
   ray.SetTextureCoord(GetTextureCoord(ray.hit_record()));
   ray.SetNormal(GetHitNormal(ray.hit_record()));
 }

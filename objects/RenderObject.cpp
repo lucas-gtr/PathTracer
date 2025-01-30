@@ -11,6 +11,6 @@ const bool RenderObject::hit(Ray& ray) const {
   if(!CheckRayCollision(ray)) return false;
   
   UpdateHitRecord(ray);
-  
+
   return true;
 }

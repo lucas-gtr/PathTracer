@@ -16,32 +16,45 @@ void Renderer::SetGamma(float gamma) {
   m_gamma = gamma;
 }
 
-void Renderer::SetToneMapping(ToneMapping tone_mapping, float exposure) {
-  switch (tone_mapping) {
-    case ToneMapping::NONE:
-      m_tone_mapping_strategy = std::make_unique<ToneMappingNone>();
-      break;
-    case ToneMapping::REINHARD:
-      m_tone_mapping_strategy = std::make_unique<ToneMappingReinhard>();
-      break;
-    case ToneMapping::EXPOSURE:
-      m_tone_mapping_strategy = std::make_unique<ToneMappingExposure>(exposure);
-      break;
-  }
+void Renderer::SetToneMapping(ToneMapping tone_mapping, float exposure)
+{
+  if (tone_mapping == ToneMapping::NONE)
+    m_tone_mapping_strategy = std::make_unique<ToneMappingNone>();
+  else if (tone_mapping == ToneMapping::REINHARD)
+    m_tone_mapping_strategy = std::make_unique<ToneMappingReinhard>();
+  else if (tone_mapping == ToneMapping::EXPOSURE)
+    m_tone_mapping_strategy = std::make_unique<ToneMappingExposure>(exposure);
 }
-
 
 void Renderer::SetBackground(std::string background_texture){
   m_background = GetTexture(background_texture);
+  
+//  GetBackgroundColor(vec3(1.0f, 0.0f, 1.0f).normalized());
+//  GetBackgroundColor(vec3(-1.0f, 0.0f, 1.0f).normalized());
 }
 
-const vec3 Renderer::GetBackgroundColor(const vec3& dir) const{
+const vec3 Renderer::GetBackgroundColor(const vec3& dir) const {
+  static constexpr float INV_TWO_PI = 1.0f / (2.0f * M_PI);
+  static constexpr float INV_PI = 1.0f / M_PI;
+  
   float theta = std::acos(dir.y);
   float phi = std::atan2(dir.x, -dir.z);
   
-  if (phi < 0) phi += 2 * M_PI;
+  float fov_factor = M_PI / (2.0f * m_rendering_camera->fov());
+  const vec3& dir_cam = m_rendering_camera->orientation();
   
-  return m_background->GetValue3F(vec2(phi / (2 * M_PI), theta / M_PI));
+  float theta_center_cam = std::acos(dir_cam.y);
+  float phi_center_cam = std::atan2(dir_cam.x, -dir_cam.z);
+  
+  float angle_diff = phi - phi_center_cam;
+  angle_diff = (angle_diff > M_PI) ? angle_diff - 2.0f * M_PI : (angle_diff < -M_PI ? angle_diff + 2.0f * M_PI : angle_diff);
+  
+  float new_phi = angle_diff * fov_factor + phi_center_cam;
+  float new_theta = (theta - theta_center_cam) * fov_factor + theta_center_cam;
+  
+  new_phi = (new_phi < 0) ? new_phi + 2.0f * M_PI : new_phi;
+  
+  return m_background->GetValue3F(vec2(new_phi * INV_TWO_PI, new_theta * INV_PI));
 }
 
 
@@ -90,12 +103,6 @@ void Renderer::AddPixelColor(unsigned int x, unsigned int y, const vec3& color) 
   m_framebuffer[x + m_width * y] += color;
 }
 
-void Renderer::DividePixelColor(const float n_samples){
-  for (size_t i = 0; i < m_width*m_height; ++i) {
-    m_framebuffer[i] /= n_samples;
-  }
-}
-
 void Renderer::SaveToDisk(const std::string& file_name) {
   std::ofstream ofs;
   ofs.open(file_name + ".ppm");
@@ -106,9 +113,9 @@ void Renderer::SaveToDisk(const std::string& file_name) {
     ApplyToneMapping(color);
     ApplyGammaCorrection(color);
 
-    ofs << (char)(256 * clamp(color.r, 0.0f, 0.999));
-    ofs << (char)(256 * clamp(color.g, 0.0f, 0.999));
-    ofs << (char)(256 * clamp(color.b, 0.0f, 0.999));
+    ofs << (char)(256 * clamp(color[0], 0.0f, 0.999));
+    ofs << (char)(256 * clamp(color[1], 0.0f, 0.999));
+    ofs << (char)(256 * clamp(color[2], 0.0f, 0.999));
   }
   ofs.close();
 }

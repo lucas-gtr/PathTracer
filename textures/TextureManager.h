@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <memory>
 #include <iostream>
+
 #include "Texture.hpp"
 
 class TextureManager {
@@ -53,14 +54,6 @@ public:
     }
     textures[name] = std::make_shared<Texture>(color_rgb);
   }
-  
-  void CreateNewTexture(const std::string& name, const vec4& color_rgba) {
-    if (textures.find(name) != textures.end()) {
-      std::cout << "Texture with this name already exists" << '\n';
-      return;
-    }
-    textures[name] = std::make_shared<Texture>(color_rgba);
-  }
 };
 
 inline void CreateNewTexture(const std::string& name, const std::string& file_path) {
@@ -73,10 +66,6 @@ inline void CreateNewTexture(const std::string& name, const float value) {
 
 inline void CreateNewTexture(const std::string& name, const vec3& color_rgb) {
   TextureManager::instance().CreateNewTexture(name, color_rgb);
-}
-
-inline void CreateNewTexture(const std::string& name, const vec4& color_rgba) {
-  TextureManager::instance().CreateNewTexture(name, color_rgba);
 }
 
 inline std::shared_ptr<Texture> GetTexture(const std::string& name) {

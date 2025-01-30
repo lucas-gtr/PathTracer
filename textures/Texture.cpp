@@ -15,25 +15,25 @@ Texture::Texture(const vec3& value){
   m_channels = 3;
   
   m_image = new float[3];
-  m_image[0] = value.r;
-  m_image[1] = value.g;
-  m_image[2] = value.b;
-}
-
-Texture::Texture(const vec4& value){
-  m_width = 1;
-  m_height = 1;
-  m_channels = 4;
-
-  m_image = new float[4];
-  m_image[0] = value.r;
-  m_image[1] = value.g;
-  m_image[2] = value.b;
-  m_image[3] = value.a;  
+  m_image[0] = value[0];
+  m_image[1] = value[1];
+  m_image[2] = value[2];
 }
 
 Texture::Texture(std::string file_path){
   TextureData texture_data = TextureLoader::Load(file_path.c_str());
+  
+  if(texture_data.image == nullptr) {
+    m_width = 1;
+    m_height = 1;
+    m_channels = 3;
+    
+    m_image = new float[3];
+    m_image[0] = 1.0f;
+    m_image[1] = 0.0f;
+    m_image[2] = 1.0f;
+    return;
+  }
   
   m_width = texture_data.width;
   m_height = texture_data.height;
@@ -49,32 +49,24 @@ void Texture::SetClampBorderColor(const vec3& color){
   m_clamp_border_color = color;
 }
 
-void Texture::SetTextureWrapping(TextureWrapping texture_wrapping){
-  switch (texture_wrapping) {
-    case TextureWrapping::REPEAT:
-      m_texture_wrapping_strategy = std::make_unique<RepeatWrapping>();
-      break;
-    case TextureWrapping::REPEAT_MIRROR:
-      m_texture_wrapping_strategy = std::make_unique<RepeatMirrorWrapping>();
-      break;
-    case TextureWrapping::CLAMP:
-      m_texture_wrapping_strategy = std::make_unique<ClampWrapping>();
-      break;
-    case TextureWrapping::CLAMP_COLOR:
-      m_texture_wrapping_strategy = std::make_unique<ClampColorWrapping>();
-      break;
-  }
+void Texture::SetTextureWrapping(TextureWrapping texture_wrapping)
+{
+  if (texture_wrapping == TextureWrapping::REPEAT)
+    m_texture_wrapping_strategy = std::make_unique<RepeatWrapping>();
+  else if (texture_wrapping == TextureWrapping::REPEAT_MIRROR)
+    m_texture_wrapping_strategy = std::make_unique<RepeatMirrorWrapping>();
+  else if (texture_wrapping == TextureWrapping::CLAMP)
+    m_texture_wrapping_strategy = std::make_unique<ClampWrapping>();
+  else if (texture_wrapping == TextureWrapping::CLAMP_COLOR)
+    m_texture_wrapping_strategy = std::make_unique<ClampColorWrapping>();
 }
 
-void Texture::SetTextureFiltering(TextureFiltering texture_filtering){
-  switch (texture_filtering) {
-    case TextureFiltering::NEAREST:
-      m_texture_filtering_strategy = std::make_unique<NearestFiltering>();
-      break;
-    case TextureFiltering::LINEAR:
-      m_texture_filtering_strategy = std::make_unique<LinearFiltering>();
-      break;
-  }
+void Texture::SetTextureFiltering(TextureFiltering texture_filtering)
+{
+  if (texture_filtering == TextureFiltering::NEAREST)
+    m_texture_filtering_strategy = std::make_unique<NearestFiltering>();
+  else if (texture_filtering == TextureFiltering::LINEAR)
+    m_texture_filtering_strategy = std::make_unique<LinearFiltering>();
 }
 
 void Texture::SetColorSpace(ColorSpace color_space){
@@ -124,19 +116,6 @@ vec3 Texture::GetValue3F(const vec2& texture_coord){
     return vec3(m_texture_filtering_strategy->GetFiltering1F(pixel_coord, m_width, m_height, m_channels, m_image));
   if(m_channels == 3 || m_channels == 4)
     return m_texture_filtering_strategy->GetFiltering3F(pixel_coord, m_width, m_height, m_channels, m_image);
-  
-  assert(false);
-}
-
-vec4 Texture::GetValue4F(const vec2& texture_coord){
-  vec2 pixel_coord = GetPixelCoordinates(texture_coord);
-  if(pixel_coord == vec2(-1.0f))
-    return vec4(m_clamp_border_color, 1.0f);
-  
-  if(m_channels == 1)
-    return vec4(vec3(m_texture_filtering_strategy->GetFiltering1F(pixel_coord, m_width, m_height, m_channels, m_image)), 1.0f);
-  if(m_channels == 3 || m_channels == 4)
-      return m_texture_filtering_strategy->GetFiltering4F(pixel_coord, m_width, m_height, m_channels, m_image);
   
   assert(false);
 }

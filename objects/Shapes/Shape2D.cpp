@@ -20,18 +20,24 @@ void Shape2D::SetupShape() {
   m_normal.normalize();
   intersection_constant = dot(m_normal, m_shape_center + m_position);
   
+//  vec3 tangent = m_u.normalized();
+//  vec3 bitangent = vec_cross(m_normal, tangent).normalized();
+//
+//  m_tbn = mat3({tangent, bitangent, m_normal});
+
   SetBBox();
 }
 
 void Shape2D::SetRotation(const vec3& rotation){
-  mat4 rotation_mat = mat4(1.0f);
-
-  rotation_mat.rotate(rotation);
+//  mat4 rotation_mat = mat4(1.0f);
+//
+//  rotation_mat.rotate(rotation);
   
-  m_shape_center = vec3(rotation_mat * vec4(m_shape_center, 1.0f));
-  m_u = vec3(rotation_mat * vec4(m_u, 1.0f));
-  m_v = vec3(rotation_mat * vec4(m_v, 1.0f));
-    
+//  m_shape_center = vec3(rotation_mat * vec4(m_shape_center, 1.0f));
+//  m_u = vec3(rotation_mat * vec4(m_u, 1.0f));
+//  m_v = vec3(rotation_mat * vec4(m_v, 1.0f));
+//    
+
   SetupShape();
 }
 
@@ -49,6 +55,7 @@ const bool Shape2D::CheckRayCollision(Ray& ray) const {
   float dist = (intersection_constant - dot(m_normal, ray.origin())) / denom;
   if(ray.IsDistanceOutOfBounds(dist)) return false;
   
+  
   const vec3& intersection_point = ray.origin() + dist * ray.direction();
   vec3 planar_hitpt_vector = intersection_point - (m_shape_center + m_position);
   float alpha = dot(m_normal_weight, vec_cross(planar_hitpt_vector, m_v));
@@ -57,6 +64,7 @@ const bool Shape2D::CheckRayCollision(Ray& ray) const {
   if(!IsInShape(alpha, beta)) return false;
   
   ray.RecordIntersection(intersection_point, dist);
+  
   return true;
 }
 
@@ -69,5 +77,8 @@ const vec2 Shape2D::GetTextureCoord(const HitRecord& hit_record) const {
   float alpha = dot(m_normal_weight, vec_cross(planar_hitpt_vector, m_v));
   float beta = dot(m_normal_weight, vec_cross(m_u, planar_hitpt_vector));
   
+  // Objects are defined from bottom-left corner
   return vec2(alpha, 1.0 - beta);
 }
+
+float Shape2D::m_timer = 0;

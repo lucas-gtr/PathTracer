@@ -1,9 +1,6 @@
 #pragma once
 
 #include "geometry.h"
-#include <cmath>
-
-#include "Ray.hpp"
 
 class SceneObject {
 protected:

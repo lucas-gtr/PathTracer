@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <memory>
 
 #include "Sphere.hpp"
 #include "Box.hpp"
@@ -9,12 +8,9 @@
 #include "Quad.hpp"
 #include "Ellipse.hpp"
 #include "Ring.hpp"
-
 #include "PointLight.hpp"
 
-#include "SceneObject.hpp"
 #include "Camera.hpp"
-#include "RenderObject.hpp"
 #include "BVHNode.hpp"
 
 class Scene {
@@ -37,8 +33,9 @@ public:
   void AddRing(const vec3& center = vec3(0.0f), const vec3& u = vec3(1.0f, 0.0f, 0.0f), const vec3& v = vec3(0.0f, 0.0f, 1.0f), float inner_radius = 0.5f, std::string material="default");
   void AddTriangle(const vec3& p1 = vec3(-0.5f, 0.0f, 0.0f), const vec3& p2 = vec3(0.0f, 0.5f, 0.0f), const vec3& p3 = vec3(0.5f, 0.0f, 0.0f), std::string material="default");
   
-  void AddPointLight(const vec3& position, const float radius, const vec3& color, const float intensity);
+  void AddPointLight(const vec3& position = vec3(0.0f), const float radius = 1.0f, const vec3& color = vec3(1.0f), const float intensity = 1.0f);
   
+  void AddObject(std::shared_ptr<Box> box);
   void AddObject(std::shared_ptr<RenderObject> renderable_object);
   void AddObject(std::shared_ptr<Camera> camera);
   

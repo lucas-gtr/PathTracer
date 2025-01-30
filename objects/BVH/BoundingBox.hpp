@@ -1,7 +1,5 @@
 #pragma once
 
-#include "geometry.h"
-
 #include "Ray.hpp"
 
 class BBox {

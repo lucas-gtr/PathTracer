@@ -80,7 +80,7 @@ const vec3 Material::diffuse(const vec2& texture_coord) const{
 }
 
 const vec3 Material::normal_map(const vec2& texture_coord) const{
-  return m_normal_map->GetValue3F(texture_coord);
+  return 2 * m_normal_map->GetValue3F(texture_coord) - 1.0f;
 }
 
 const float Material::metallic(const vec2& texture_coord) const{

@@ -3,9 +3,6 @@
 #include <vector>
 #include <fstream>
 
-#include "geometry.h"
-
-#include "Camera.hpp"
 #include "Scene.hpp"
 #include "TextureManager.h"
 #include "ToneMappingStrategy.hpp"
@@ -25,6 +22,8 @@ protected:
   unsigned int m_width, m_height;
   float m_frame_rate;
   unsigned int m_frame_range[2];
+  
+  long m_start_rendering_time = -1l;
   
   std::shared_ptr<Camera> m_rendering_camera;
   
@@ -51,7 +50,6 @@ public:
   
   void SetPixelColor(unsigned int x, unsigned int y, vec3& color);
   void AddPixelColor(unsigned int x, unsigned int y, const vec3& color);
-  void DividePixelColor(const float n_samples);
 
   void SaveToDisk(const std::string& file_name);
 };

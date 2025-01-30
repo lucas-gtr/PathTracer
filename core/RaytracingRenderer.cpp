@@ -11,10 +11,16 @@ void RaytracingRenderer::SetRayMaxDistance(float distance) {
 }
 
 void RaytracingRenderer::SetSamplesPerPixels(unsigned int samples) {
-  m_samples_per_pixel = samples;
-  m_sqrt_samples_per_pixels = std::sqrt(m_samples_per_pixel);
-  m_grid_cell_size = 1 / m_sqrt_samples_per_pixels;
-  m_pixel_sample_factor = 1 / (m_sqrt_samples_per_pixels * m_sqrt_samples_per_pixels);
+  m_sqrt_samples_per_pixels = std::sqrt(samples);
+  m_samples_per_pixel = m_sqrt_samples_per_pixels * m_sqrt_samples_per_pixels;
+  m_grid_cell_size = 1.0f / m_sqrt_samples_per_pixels;
+  m_pixel_sample_factor = 1.0f / m_samples_per_pixel;
+}
+
+void RaytracingRenderer::NormalizeSamples(){
+  for (size_t i = 0; i < m_width*m_height; ++i) {
+    m_framebuffer[i] *= m_pixel_sample_factor;
+  }
 }
 
 void RaytracingRenderer::SetMaxDepth(unsigned int max_depth){
@@ -31,10 +37,17 @@ const vec3 RaytracingRenderer::GetOutgoingDir(const vec3& incidence_dir, HitReco
   const vec3& normal = hit_record.normal;
   auto& mat = hit_record.material;
   const vec2& tex_coord = hit_record.texture_coord;
-  float opacity = mat->opacity(tex_coord);
-  if (opacity < 1.0f) {
+  
+  float roughness = mat->roughness(tex_coord);
+
+  float cos_theta = std::fmax(dot(-incidence_dir, normal), 0.0);
+  if(reflectance(cos_theta, hit_record.IOR) > random_float())
+     return (reflect(incidence_dir, normal) + (roughness * random_unit_vec3())).normalized();
+  
+   float opacity = mat->opacity(tex_coord);
+   if (opacity < 1.0f) {
     float opacity_factor = random_float();
-    
+
     if(opacity_factor >= opacity) {
       float IOR_factor;
       float ray_IOR = hit_record.IOR;
@@ -45,15 +58,14 @@ const vec3 RaytracingRenderer::GetOutgoingDir(const vec3& incidence_dir, HitReco
         IOR_factor = ray_IOR / mat->IOR(tex_coord);
         ray_IOR = mat->IOR(tex_coord);
       }
-      
-      float cos_theta = std::fmin(dot(-incidence_dir, normal), 1.0);
+
       float sin_theta = std::sqrt(1.0 - cos_theta*cos_theta);
-      
+
       bool cannot_refract = IOR_factor * sin_theta > 1.0;
       vec3 direction;
-      
+
       if (cannot_refract || reflectance(cos_theta, IOR_factor) > random_float())
-        return reflect(incidence_dir, normal);
+        return (reflect(incidence_dir, normal) + (roughness * random_unit_vec3())).normalized();
       else {
         hit_record.IOR = ray_IOR;
         return refract(incidence_dir, normal, IOR_factor);
@@ -65,17 +77,16 @@ const vec3 RaytracingRenderer::GetOutgoingDir(const vec3& incidence_dir, HitReco
   if(metalness > 0.0f) {
     float metal_factor = random_float();
     if(metal_factor < metalness) {
-      float roughness = mat->roughness(tex_coord);
-      return (reflect(incidence_dir, normal) + (roughness * random_unit_vector<3>())).normalized();
+      return (reflect(incidence_dir, normal) + (roughness * random_unit_vec3())).normalized();
     }
   }
   
-  return (normal + random_unit_vector<3>()).normalized();
+  return (normal + random_unit_vec3()).normalized();
 }
 
 vec3 RaytracingRenderer::GetRayRadiance(Ray& ray, const std::shared_ptr<BVHNode>& bvh_root) {
-  
   if(ray.depth() >= m_max_depth) return vec3(0.0f);
+  
   if(!bvh_root->hit(ray)) return GetBackgroundColor(ray.direction());
   
   HitRecord hit_record = ray.hit_record();
@@ -83,7 +94,7 @@ vec3 RaytracingRenderer::GetRayRadiance(Ray& ray, const std::shared_ptr<BVHNode>
   if(hit_record.material == nullptr) return hit_record.light_color_intensity;
   
   // TO ADD : TANGENT SPACE CALCULATION
-  hit_record.normal = hit_record.material->normal_map(hit_record.texture_coord);
+//  hit_record.normal = hit_record.material->normal_map(hit_record.texture_coord);
   vec3 outgoing_dir = GetOutgoingDir(ray.direction(), hit_record);
     
   Ray outgoing_ray(hit_record.intersection_point, outgoing_dir, ray.depth() + 1);
@@ -91,6 +102,7 @@ vec3 RaytracingRenderer::GetRayRadiance(Ray& ray, const std::shared_ptr<BVHNode>
   
   const vec3& diffuse_color = hit_record.material->diffuse(hit_record.texture_coord);
   const vec3& light_emit = hit_record.material->emission_color(hit_record.texture_coord) * hit_record.material->emission_intensity(hit_record.texture_coord);
+  
   return light_emit + diffuse_color * (GetRayRadiance(outgoing_ray, bvh_root));
 }
 
@@ -126,16 +138,44 @@ RaytracingRenderer::Viewport RaytracingRenderer::InitializeViewport(std::shared_
   return Viewport(pixel00_pos, pixel_du, pixel_dv, lens_u, lens_v);
 }
 
-Ray RaytracingRenderer::GenerateRay(int x, int y, int s_x, int s_y, Viewport viewport, std::shared_ptr<Camera> camera){
+Ray RaytracingRenderer::GenerateRay(int x, int y, int s_x, int s_y, const Viewport& viewport, std::shared_ptr<Camera> camera){
   vec2 offset = random_stratisfied(s_x, s_y, m_grid_cell_size);
   vec3 pixel_sample = viewport.pixel00_pos + ((x + offset.x) * viewport.pixel_du) + ((y + offset.y) * viewport.pixel_dv);
   
-  vec2 lens_ray_origin = random_unit_vector<2>();
+  vec2 lens_ray_origin = random_unit_vec2();
   vec3 ray_origin = camera->position() + (lens_ray_origin.x * viewport.lens_u) + (lens_ray_origin.y * viewport.lens_v);
   
   vec3 ray_direction = pixel_sample - ray_origin;
   
   return Ray(ray_origin, ray_direction.normalized());
+}
+
+void RaytracingRenderer::DisplayETA(const long current_sample){
+  if(m_start_rendering_time < 0) { // Render not started yet
+    timeval time_start;
+    gettimeofday(&time_start, NULL);
+    m_start_rendering_time = (time_start.tv_sec * 10'000) + (time_start.tv_usec / 100);
+    std::clog << "Sample " << current_sample << "/" << m_samples_per_pixel << '\n';
+    return;
+  }
+  
+  timeval current_time;
+  gettimeofday(&current_time, NULL);
+  float time_elapsed = ((current_time.tv_sec * 10'000) + (current_time.tv_usec / 100) - m_start_rendering_time) / 10000;
+  
+  if(current_sample < 0) { // Render finished
+    std::clog << "Render done in " << int(time_elapsed) / 60 << "m" << int(time_elapsed) % 60 << "s" << '\n';
+    m_start_rendering_time = -1;
+    return;
+  }
+    
+  float time_to_one_sample = current_sample == 1 ? time_elapsed : time_elapsed / (current_sample - 1);
+  
+  float eta_time = time_to_one_sample * (m_samples_per_pixel - current_sample + 1);
+  
+  std::clog << "Sample " << current_sample << "/" << m_samples_per_pixel << " ";
+  std::clog << "(ETA: " << int(eta_time) / 60 << "m" << int(eta_time) % 60 << "s, ";
+  std::clog << "Elapsed : " << int(time_elapsed) / 60 << "m" << int(time_elapsed) % 60 << "s)\n";
 }
 
 void RaytracingRenderer::Render(const Scene& scene) {
@@ -149,26 +189,16 @@ void RaytracingRenderer::Render(const Scene& scene) {
     return;
   }
   
+  std::shared_ptr<BVHNode> bvh_root = std::make_shared<BVHNode>(scene.renderable_list());
+  
+  Viewport viewport = InitializeViewport(scene.camera());
   timeval time_start;
   gettimeofday(&time_start, NULL);
   long start_time = (time_start.tv_sec * 10'000) + (time_start.tv_usec / 100);
   
-  std::shared_ptr<BVHNode> bvh_root = std::make_shared<BVHNode>(scene.renderable_list());
-  
-  Viewport viewport = InitializeViewport(scene.camera());
-  
-  int total_samples = m_sqrt_samples_per_pixels * m_sqrt_samples_per_pixels;
   for (int s_y = 0; s_y < m_sqrt_samples_per_pixels; s_y++) {
     for (int s_x = 0; s_x < m_sqrt_samples_per_pixels; s_x++) {
-      timeval current_time;
-      gettimeofday(&current_time, NULL);
-      long time_elapsed = ((current_time.tv_sec * 10'000) + (current_time.tv_usec / 100) - start_time) / 10000;
-      
-      int current_sample = m_sqrt_samples_per_pixels*s_y + s_x + 1;
-      
-      float time_to_one_sample = current_sample == 1 ? time_elapsed : float(time_elapsed) / (current_sample - 1);
-      
-      std::clog << "Sample " << current_sample << "/" << total_samples << " (ETA: " << int(time_to_one_sample * (total_samples - current_sample + 1)) / 60 << "m" << int(time_to_one_sample * (total_samples - current_sample + 1)) % 60 << "s, Elapsed : " << time_elapsed / 60 << "m" << time_elapsed % 60 << "s)" << '\n';
+      DisplayETA(m_sqrt_samples_per_pixels*s_y + s_x + 1);
       for (int y = 0; y < m_height; y++) {
         for (int x = 0; x < m_width; x++) {
           Ray ray = GenerateRay(x, y, s_x, s_y, viewport, scene.camera());
@@ -178,10 +208,9 @@ void RaytracingRenderer::Render(const Scene& scene) {
       }
     }
   }
-  DividePixelColor(m_samples_per_pixel);
-  
-  timeval time_end;
-  gettimeofday(&time_end, NULL);
-  long time_elapsed = ((time_end.tv_sec * 10'000) + (time_end.tv_usec / 100) -  start_time) / 10000;
-  std::clog << "Done in " << time_elapsed / 60 << "m" << time_elapsed % 60 << "s" << '\n';
+  gettimeofday(&time_start, NULL);
+  m_timer += (time_start.tv_sec * 10'000) + (time_start.tv_usec / 100) - start_time;
+  NormalizeSamples();
+  DisplayETA(-1);
+  std::cout << "Function timer: " << m_timer << '\n';
 }

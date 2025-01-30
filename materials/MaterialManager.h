@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <memory>
 #include <iostream>
+
 #include "Material.hpp"
 
 class MaterialManager {
